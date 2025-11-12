@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Nakama CORS Test</title>
+</head>
+<body>
+  <h1>Testing Nakama CORS</h1>
+  <button onclick="testCORS()">Test CORS</button>
+  <pre id="result"></pre>
+
+  <script>
+    async function testCORS() {
+      const result = document.getElementById('result');
+      result.textContent = 'Testing...';
+
+      try {
+        const response = await fetch("http://localhost:10000/v2/account/authenticate/device", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: "test-device-id"
+          })
+        });
+
+        const text = await response.text();
+        const allowOrigin = response.headers.get("access-control-allow-origin");
+        const allowMethods = response.headers.get("access-control-allow-methods");
+        const allowHeaders = response.headers.get("access-control-allow-headers");
+
+        console.log("Status:", response.status);
+        console.log("Allow-Origin:", allowOrigin);
+        console.log("Allow-Methods:", allowMethods);
+        console.log("Allow-Headers:", allowHeaders);
+
+        result.textContent = 
+          `✅ Status: ${response.status}\n` +
+          `✅ Allow-Origin: ${allowOrigin}\n` +
+          `✅ Allow-Methods: ${allowMethods}\n` +
+          `✅ Allow-Headers: ${allowHeaders}\n\n` +
+          `Response Body:\n${text}`;
+      } catch (error) {
+        console.error(error);
+        result.textContent = '❌ Error: ' + error.message;
+      }
+    }
+  </script>
+</body>
+</html>
