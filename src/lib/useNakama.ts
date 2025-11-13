@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { Client, Session, Socket } from "@heroiclabs/nakama-js";
 
 const NAKAMA_HOST = process.env.NEXT_PUBLIC_NAKAMA_HOST
-const USE_SSL = process.env.NEXT_PUBLIC_NAKAMA_SSL
-const NAKAMA_PORT = process.env.NEXT_PUBLIC_NAKAMA_PORT
+const USE_SSL = process.env.NEXT_PUBLIC_NAKAMA_SSL === "true";
+const NAKAMA_PORT = process.env.NEXT_PUBLIC_NAKAMA_PORT || "7350";
 // Get or create a persistent device ID
 function getDeviceId(): string {
   const STORAGE_KEY = "nakama_device_id";
@@ -26,7 +26,7 @@ function getDeviceId(): string {
 
 export function useNakama() {
   const [client] = useState(
-    () => new Client(process.env.NEXT_PUBLIC_NAKAMA_KEY, NAKAMA_HOST, parseInt(NAKAMA_PORT), process.env.NEXT_PUBLIC_NAKAMA_SSL === "true")
+    () => new Client(process.env.NEXT_PUBLIC_NAKAMA_KEY, NAKAMA_HOST, NAKAMA_PORT, USE_SSL)
   );
   const [session, setSession] = useState<Session | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -49,7 +49,7 @@ export function useNakama() {
 
         // Connect realtime WebSocket
         const newSocket = client.createSocket(USE_SSL, false);
-        await newSocket.connect(newSession);
+        await newSocket.connect(newSession, false);
         console.log("✅ Connected to Nakama realtime via", USE_SSL ? "WSS" : "WS");
         
         setSocket(newSocket);
