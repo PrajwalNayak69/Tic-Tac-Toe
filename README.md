@@ -1,36 +1,177 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Multiplayer Tic-Tac-Toe
 
-## Getting Started
+Real-time multiplayer Tic-Tac-Toe game with Next.js and Nakama.
 
-First, run the development server:
+## Features
 
+- Real-time multiplayer gameplay
+- Automatic matchmaking
+- Pre-game lobby with nickname system
+- Persistent device-based sessions
+- Modern UI with Tailwind CSS
+
+## Tech Stack
+
+- **Frontend**: Next.js, TypeScript, Tailwind CSS
+- **Backend**: Nakama Game Server (Lua)
+- **Database**: PostgreSQL
+- **Deployment**: Render
+
+## Setup Instructions
+
+### Local Development
+
+1. **Clone and install dependencies**
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repo-url>
+cd client
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. **Create `.env` file**
+```env
+DATABASE_URL=postgres://user:pass@host:5432/db?sslmode=require
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. **Start Nakama with Docker**
+```bash
+docker build -t nakama-tictactoe .
+docker run -p 7350:7350 --env-file .env nakama-tictactoe
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. **Configure client for local mode**
+In `lib/useNakama.ts`:
+```typescript
+const isProduction = false;
+```
 
-## Learn More
+5. **Start Next.js**
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Visit `http://localhost:3000`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Architecture
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+Frontend (Next.js) 
+    ↓ WebSocket
+Nakama Server (Port 7350)
+    ↓
+PostgreSQL Database
+```
 
-## Deploy on Vercel
+### Key Design Decisions
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **Device Authentication** - No passwords, uses localStorage device ID
+2. **Pre-game Lobby** - Players confirm nicknames before starting
+3. **Authoritative Server** - All game logic runs server-side (Lua)
+4. **Real-time Sync** - WebSocket broadcasts game state to all players
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment
+
+### Deploy Nakama to Render
+
+1. Create PostgreSQL database on Render
+2. Create Web Service (Docker)
+3. Set environment variables:
+```
+DATABASE_URL=<your-postgres-url>
+PORT=7350
+```
+4. Set Health Check Path to `/`
+5. Deploy
+
+### Deploy Frontend to Vercel
+
+1. Update `lib/useNakama.ts`:
+```typescript
+const isProduction = true;
+const NAKAMA_HOST = "your-app.onrender.com";
+const NAKAMA_PORT = "443";
+const USE_SSL = true;
+```
+
+2. Deploy:
+```bash
+vercel
+```
+
+## Server Configuration
+
+### Nakama Config (`local.yml`)
+
+```yaml
+socket:
+  server_key: "defaultkey"
+  port: 7350
+  address: "0.0.0.0"
+
+server:
+  port: 7350
+  cors:
+    allowed_origins: ["*"]
+
+session:
+  token_expiry_sec: 7200
+```
+
+### Game Op Codes
+
+- `OP_CODE_MOVE = 1` - Player makes a move
+- `OP_CODE_STATE = 2` - Server broadcasts state
+- `OP_CODE_READY = 3` - Player ready in lobby
+
+## Testing Multiplayer
+
+### Method 1: Two Browser Windows
+1. Open app in Chrome
+2. Open app in Firefox/Incognito
+3. Enter nicknames
+4. Click "Find Match" in both
+5. Both ready up and play
+
+### Method 2: Two Devices
+1. Find local IP: `ipconfig` or `ifconfig`
+2. Access `http://YOUR_IP:3000` from two devices
+3. Test matchmaking
+
+### Production Testing
+- Open app in normal + incognito mode
+- Or share URL with another person
+
+## Common Issues
+
+**"Request timeout"**
+- Check Nakama is running: `docker ps`
+- Verify NAKAMA_HOST has no `http://` or `https://`
+
+**"CORS error"**
+- Check `cors` settings in `local.yml`
+- Verify allowed_origins includes your domain
+
+**Players not matching**
+- Ensure both connected to same server
+- Check both searching at same time
+
+## Project Structure
+
+```
+├── client/
+│   ├── app/
+│   │   └── game/
+│   │       └── page.tsx          # Main game component
+│   └── lib/
+│       └── useNakama.ts          # Nakama connection hook
+├── modules/
+│   ├── init.lua                   # Runtime initialization
+│   └── tic_tac_toe.lua           # Match handler logic
+├── Dockerfile
+├── docker-compose.yml
+└── local.yml                      # Nakama config
+```
+
+## License
+
+MIT
