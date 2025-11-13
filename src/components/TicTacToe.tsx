@@ -39,7 +39,7 @@ export default function TicTacToe() {
           new TextDecoder().decode(data.data)
         );
         
-        const myIndex = state.players.indexOf(session.user_id);
+        const myIndex = session?.user_id ? state.players.indexOf(session.user_id) : -1;
         setMyPlayerIndex(myIndex);
         setGameState(state);
 
