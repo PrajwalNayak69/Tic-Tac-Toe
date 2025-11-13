@@ -26,7 +26,7 @@ function getDeviceId(): string {
 
 export function useNakama() {
   const [client] = useState(
-    () => new Client("defaultkey", NAKAMA_HOST, parseInt(NAKAMA_PORT), USE_SSL === "true")
+    () => new Client(process.env.NEXT_PUBLIC_NAKAMA_KEY, NAKAMA_HOST, parseInt(NAKAMA_PORT), process.env.NEXT_PUBLIC_NAKAMA_SSL === "true")
   );
   const [session, setSession] = useState<Session | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
